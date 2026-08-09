@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>인파 조수표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+  :root{
+    --bg:#0f1f2e;
+    --panel:#152a3d;
+    --line:#274257;
+    --calm:#5fae82;
+    --mid:#3f9fb0;
+    --high:#e2645a;
+    --ink:#f2f0ea;
+    --sub:#8ea3b3;
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --serif:'Nanum Myeongjo','Noto Serif KR',serif;
+    --sans:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:16px;-webkit-tap-highlight-color:transparent;}
+  body{min-height:100vh;display:flex;flex-direction:column;align-items:center;
+    padding:24px 16px 40px;}
+  .wrap{width:100%;max-width:440px;}
+  header{text-align:center;margin-bottom:20px;}
+  h1{font-family:var(--serif);font-size:28px;letter-spacing:2px;margin:0 0 4px;font-weight:400;}
+  .sub{font-family:var(--mono);font-size:12px;color:var(--sub);letter-spacing:1px;}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:16px;margin-bottom:14px;}
+  label{display:block;font-family:var(--mono);font-size:12px;color:var(--sub);
+    letter-spacing:.5px;margin-bottom:6px;}
+  input[type=text]{width:100%;background:var(--bg);border:1px solid var(--line);
+    color:var(--ink);border-radius:8px;padding:11px 10px;font-size:16px;
+    font-family:var(--sans);margin-bottom:14px;}
+  input[type=text]:focus{outline:none;border-color:var(--mid);}
+  .hour-row{display:flex;align-items:center;gap:10px;}
+  input[type=range]{flex:1;accent-color:var(--mid);}
+  .hour-out{font-family:var(--mono);font-size:15px;min-width:56px;text-align:right;}
+  .quick{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .quick button{flex:1;background:var(--bg);border:1px solid var(--line);
+    color:var(--sub);border-radius:8px;padding:7px 4px;font-size:12px;
+    font-family:var(--mono);}
+  .quick button.active{border-color:var(--mid);color:var(--ink);}
+
+  .badge{display:inline-block;font-family:var(--mono);font-size:11px;
+    border-radius:20px;padding:3px 9px;letter-spacing:.3px;margin-left:8px;
+    vertical-align:middle;}
+  .badge.live{border:1px solid var(--mid);color:var(--mid);}
+  .badge.est{border:1px solid var(--line);color:var(--sub);}
+
+  .settings-toggle{display:flex;justify-content:flex-end;margin-bottom:8px;}
+  .settings-toggle button{background:none;border:none;color:var(--sub);
+    font-family:var(--mono);font-size:12px;text-decoration:underline;}
+  .settings{display:none;}
+  .settings.show{display:block;}
+  .settings small{display:block;color:var(--sub);font-size:11.5px;
+    line-height:1.5;margin:-6px 0 12px;}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:4px;}
+  .toggle-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--mid);}
+
+  .tide-card{border-radius:16px;overflow:hidden;margin-bottom:14px;display:none;
+    border:1px solid var(--line);}
+  .tide-card.show{display:block;}
+
+  .hero{position:relative;height:230px;display:flex;background:#0a1420;}
+  .map-box{position:relative;width:55%;height:100%;overflow:hidden;background:#0a1622;
+    border-right:1px solid rgba(255,255,255,.08);}
+  .map-svg{position:absolute;top:0;left:0;transform-origin:0 0;}
+  .map-outline{fill:rgba(255,255,255,.16);stroke:rgba(255,255,255,.38);stroke-width:1.5;}
+  #mapRing{fill:none;stroke-width:2;opacity:0;}
+  #mapRing.pulse{animation:ringpulse 1.8s ease-out infinite;}
+  #mapMarker{opacity:0;}
+  @keyframes ringpulse{
+    0%{opacity:.9;r:4;}
+    100%{opacity:0;r:20;}
+  }
+  .map-tag{position:absolute;left:8px;bottom:8px;font-family:var(--mono);font-size:10px;
+    color:rgba(255,255,255,.55);letter-spacing:.3px;z-index:2;}
+
+  .reveal-box{position:relative;width:45%;height:100%;overflow:hidden;opacity:0;
+    transition:opacity 1s ease;}
+  .reveal-box.show{opacity:1;}
+  .reveal-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:56px;opacity:.32;}
+  .reveal-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    opacity:0;transition:opacity .8s ease;}
+  .reveal-badge{position:absolute;top:10px;right:10px;}
+
+  .hero-text{padding:14px 16px 16px;background:var(--panel);}
+  .place-name{font-family:var(--serif);font-size:24px;font-weight:400;margin:0 0 3px;}
+  .place-cat{font-family:var(--mono);font-size:12px;color:var(--sub);margin:0 0 10px;}
+  .verdict-row{display:flex;align-items:baseline;gap:10px;}
+  .rpct{font-family:var(--serif);font-size:38px;font-weight:400;line-height:1;}
+  .verdict{font-size:16px;font-weight:700;}
+  .hint{font-size:13px;color:var(--sub);margin-top:4px;}
+
+  .body-panel{background:var(--panel);padding:0 18px 18px;}
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+  .stat{background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    padding:10px 6px;text-align:center;}
+  .stat .slabel{display:block;font-family:var(--mono);font-size:11px;color:var(--sub);
+    margin-bottom:4px;letter-spacing:.3px;}
+  .stat .sval{font-family:var(--mono);font-size:14px;font-weight:700;}
+
+  .forecast{margin-top:16px;}
+  .forecast h3{font-size:12px;color:var(--sub);letter-spacing:.5px;margin:0 0 8px;
+    font-family:var(--mono);font-weight:700;}
+  .fbars{display:flex;align-items:flex-end;gap:5px;height:56px;}
+  .fbar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+    height:100%;}
+  .fbar .bar{width:100%;border-radius:3px 3px 0 0;transition:height .4s ease;}
+  .fbar .fh{font-family:var(--mono);font-size:10px;color:var(--sub);margin-top:4px;}
+
+  .empty{text-align:center;color:var(--sub);font-size:14px;padding:20px 0;}
+  datalist{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>인파 조수표</h1>
+    <div class="sub">CROWD TIDE · 장소별 혼잡도</div>
+  </header>
+
+  <div class="settings-toggle">
+    <button type="button" id="settingsBtn">서울 실시간 데이터 설정</button>
+  </div>
+  <div class="panel settings" id="settingsPanel">
+    <small>서울시 열린데이터광장(data.seoul.go.kr)에서 무료로 발급받은 본인의 API 키를 입력하면, 서울 내 일부 장소는 실제 실시간 인구 데이터를 가져옵니다. 키가 없거나 서울 외 지역이면 자동으로 추정치를 보여줘요. 키는 이 기기에만 저장되고 서버로 전송되지 않아요.</small>
+    <label>서울 열린데이터광장 API 키</label>
+    <input type="text" id="apiKey" placeholder="발급받은 인증키 붙여넣기" autocomplete="off">
+    <div class="toggle-row">
+      <label style="margin-bottom:0;">CORS 우회 프록시 사용</label>
+      <input type="checkbox" id="useProxy">
+    </div>
+    <small>일부 기기/브라우저에서는 서울시 서버가 직접 요청을 막을 수 있어요(CORS). 이 경우 체크하면 공개 프록시(allorigins.win)를 경유합니다 — 이 경로로 API 키가 제3자 서버를 거치니, 원치 않으면 꺼두세요.</small>
+  </div>
+
+  <div class="panel">
+    <label>장소</label>
+    <input type="text" id="place" list="places" placeholder="예: 경복궁, 에버랜드, 해운대해수욕장" autocomplete="off">
+    <label>시간대 <span id="hourLabel"></span></label>
+    <div class="hour-row">
+      <input type="range" id="hour" min="0" max="23" step="1">
+      <div class="hour-out" id="hourOut"></div>
+    </div>
+    <div class="quick">
+      <button type="button" data-off="0" class="active">지금</button>
+      <button type="button" data-off="3">3시간 후</button>
+      <button type="button" data-off="6">6시간 후</button>
+    </div>
+  </div>
+
+  <div class="tide-card" id="result">
+    <div class="hero">
+      <div class="map-box" id="mapBox">
+        <svg class="map-svg" id="mapSvg" viewBox="0 0 260 400" width="260" height="400">
+          <path class="map-outline" d="M74,61 L84,82 L66,121 L86,187 L80,211 L74,271 L82,289 L130,275 L136,271 L156,268 L166,268 L182,250 L194,218 L195,182 L196,115 L186,82 L176,61 L164,29 L159,16 L112,32 L102,36 L90,50 Z"></path>
+          <circle class="map-outline" cx="82" cy="368" r="9"></circle>
+          <circle id="mapRing" cx="0" cy="0" r="4"></circle>
+          <circle id="mapMarker" cx="0" cy="0" r="5" fill="#e2645a"></circle>
+        </svg>
+        <div class="map-tag">대한민국</div>
+      </div>
+      <div class="reveal-box" id="revealBox">
+        <div class="reveal-icon" id="revealIcon"></div>
+        <img class="reveal-photo" id="revealPhoto" alt="">
+        <div class="badge reveal-badge" id="rBadge"></div>
+      </div>
+    </div>
+    <div class="hero-text">
+      <p class="place-name" id="rName"></p>
+      <p class="place-cat" id="rCatText"></p>
+      <div class="verdict-row">
+        <span class="rpct" id="rPct"></span>
+        <span class="verdict" id="rVerdict"></span>
+      </div>
+      <p class="hint" id="rHint"></p>
+    </div>
+
+    <div class="body-panel">
+      <div class="stats">
+        <div class="stat">
+          <span class="slabel">면적</span>
+          <span class="sval" id="sArea"></span>
+        </div>
+        <div class="stat">
+          <span class="slabel">예상 인원</span>
+          <span class="sval" id="sPeople"></span>
+        </div>
+        <div class="stat">
+          <span class="slabel">밀집도</span>
+          <span class="sval" id="sDensity"></span>
+        </div>
+      </div>
+
+      <div class="forecast">
+        <h3>다음 6시간 흐름</h3>
+        <div class="fbars" id="fbars"></div>
+      </div>
+
+      <div class="parking" id="parkingSection" style="display:none;margin-top:16px;">
+        <h3 style="font-size:12px;color:var(--sub);letter-spacing:.5px;margin:0 0 8px;font-family:var(--mono);font-weight:700;">주차장 현황</h3>
+        <ul id="parkingList" style="list-style:none;margin:0;padding:0;font-size:13px;"></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty" id="emptyMsg">장소를 입력하면 혼잡도가 표시됩니다</div>
+</div>
+
+<datalist id="places"></datalist>
+
+<script>
+var PLACES = [
+  ["경복궁","고궁",430000,15000,"경복궁",37.579,126.977],
+  ["창덕궁","고궁",405000,8000,"창덕궁·종묘",37.582,126.991],
+  ["덕수궁","고궁",62000,5000,"광화문·덕수궁",37.566,126.975],
+  ["종묘","고궁",187000,4000,"창덕궁·종묘",37.574,126.994],
+  ["에버랜드","놀이공원",1489000,50000,null,37.294,127.202],
+  ["롯데월드","놀이공원",125000,30000,"잠실 관광특구",37.511,127.098],
+  ["서울랜드","놀이공원",700000,20000,null,37.427,127.005],
+  ["오션월드","워터파크",140000,20000,null,37.643,127.968],
+  ["캐리비안베이","워터파크",120000,20000,null,37.291,127.198],
+  ["코엑스 아쿠아리움","아쿠아리움",9000,3000,"강남 MICE 관광특구",37.512,127.059],
+  ["롯데월드 아쿠아리움","아쿠아리움",9000,3000,"잠실 관광특구",37.511,127.098],
+  ["부산 아쿠아리움","아쿠아리움",9000,3000,null,35.158,129.160],
+  ["제주 아쿠아플라넷","아쿠아리움",10000,3000,null,33.462,126.933],
+  ["N서울타워","전망대",1000,1000,"남산공원",37.551,126.988],
+  ["롯데월드타워 전망대","전망대",2000,1500,"잠실 관광특구",37.512,127.102],
+  ["63아트","전망대",1200,1000,null,37.519,126.940],
+  ["통영 케이블카","전망대",5000,1500,null,34.836,128.435],
+  ["해운대해수욕장","해수욕장",580000,100000,null,35.158,129.160],
+  ["광안리해수욕장","해수욕장",380000,80000,null,35.153,129.118],
+  ["경포해수욕장","해수욕장",450000,60000,null,37.805,128.908],
+  ["국립중앙박물관","박물관",137000,10000,null,37.524,126.980],
+  ["국립과학관","과학관",300000,15000,null,36.374,127.394],
+  ["국립과천과학관","과학관",90000,10000,null,37.435,126.994],
+  ["서울숲","공원",480000,30000,"서울숲공원",37.544,127.038],
+  ["여의도한강공원","공원",700000,50000,"여의도한강공원",37.528,126.933],
+  ["반포한강공원","공원",800000,50000,"반포한강공원",37.510,126.997],
+  ["청계천","공원",180000,15000,"청계천",37.569,126.978],
+  ["어린이대공원","동물원",536000,30000,"어린이대공원",37.548,127.081],
+  ["서울대공원 동물원","동물원",913000,40000,null,37.427,127.019],
+  ["에버랜드 동물원","동물원",250000,15000,null,37.294,127.202],
+  ["전주한옥마을","관광지",250000,20000,null,35.815,127.153],
+  ["남이섬","관광지",460000,20000,null,37.790,127.525],
+  ["감천문화마을","관광지",100000,8000,null,35.098,129.010],
+  ["인사동거리","관광지",50000,15000,"인사동",37.574,126.985],
+  ["코엑스 별마당도서관","관광지",2800,2000,"강남 MICE 관광특구",37.512,127.059],
+  ["명동거리","쇼핑",100000,40000,"명동 관광특구",37.563,126.986],
+  ["강남 코엑스몰","쇼핑",117000,30000,"강남 MICE 관광특구",37.512,127.059],
+  ["광장시장","시장",42000,15000,"광장시장",37.570,126.999],
+  ["부산 자갈치시장","시장",10000,8000,null,35.096,129.030],
+  ["통인시장","시장",4000,3000,"통인시장",37.580,126.970],
+  ["불국사","문화재",407000,8000,null,35.790,129.332],
+  ["석굴암","문화재",10000,2000,null,35.795,129.349],
+  ["설악산 국립공원","자연",398000000,20000,null,38.119,128.465],
+  ["성산일출봉","자연",600000,10000,null,33.458,126.942],
+  ["한라산 국립공원","자연",153000000,15000,null,33.362,126.533],
+  ["지리산 국립공원","자연",483000000,20000,null,35.337,127.730]
+];
+
+var CATEGORY_PROFILE = {
+  "고궁":       [2,1,1,1,1,2,5,15,35,60,70,65,55,60,68,55,40,25,10,5,3,2,2,2],
+  "놀이공원":   [1,1,1,1,1,1,2,5,25,50,65,75,80,85,80,70,60,50,35,20,10,5,2,1],
+  "워터파크":   [1,1,1,1,1,1,2,5,20,45,60,75,85,88,82,70,55,35,20,10,5,2,1,1],
+  "아쿠아리움": [1,1,1,1,1,1,2,4,10,30,55,65,70,72,68,60,50,40,25,15,8,4,2,1],
+  "전망대":     [5,3,2,1,1,1,2,4,10,20,30,35,38,40,42,48,58,70,80,75,55,35,20,10],
+  "해수욕장":   [1,1,1,1,1,2,8,20,35,50,65,78,85,82,75,65,55,40,25,12,5,2,1,1],
+  "박물관":     [1,1,1,1,1,1,2,3,8,35,55,60,58,55,52,48,38,20,8,3,2,1,1,1],
+  "과학관":     [1,1,1,1,1,1,2,3,10,40,58,62,58,55,50,45,32,15,6,2,1,1,1,1],
+  "공원":       [3,2,1,1,1,3,15,30,25,18,15,18,22,25,30,38,50,55,45,32,20,12,7,4],
+  "동물원":     [1,1,1,1,1,1,2,5,15,40,58,65,60,55,58,50,35,18,8,3,2,1,1,1],
+  "관광지":     [3,2,1,1,1,2,5,12,25,42,55,62,58,55,58,55,48,38,25,15,8,5,3,2],
+  "쇼핑":       [1,1,1,1,1,1,2,4,8,20,32,42,48,50,52,55,62,72,78,68,50,30,15,5],
+  "시장":       [1,1,1,1,1,3,10,25,40,55,62,58,50,45,48,52,60,55,40,25,12,5,2,1],
+  "문화재":     [2,1,1,1,1,2,5,12,28,48,58,55,50,52,55,45,32,18,8,4,2,1,1,1],
+  "자연":       [1,1,1,1,1,3,15,35,55,62,58,50,45,42,40,38,32,25,15,8,4,2,1,1]
+};
+
+var CATEGORY_BG = {
+  "고궁":["#2b2013","#5a3d1f"], "놀이공원":["#2a1030","#7a2f66"], "워터파크":["#052a3d","#0f7a9e"],
+  "아쿠아리움":["#031f33","#0a5c82"], "전망대":["#0e1830","#2e4d80"], "해수욕장":["#04283a","#1a8fae"],
+  "박물관":["#241a10","#5a4426"], "과학관":["#0c1f2e","#1f5c78"], "공원":["#0f2416","#2c6b3a"],
+  "동물원":["#1a2410","#4c6b1f"], "관광지":["#2a160f","#7a3a1f"], "쇼핑":["#231029","#6b2c6f"],
+  "시장":["#2b1608","#8a4a12"], "문화재":["#221808","#61451a"], "자연":["#0c2116","#1f5c3a"]
+};
+var CATEGORY_ICON = {
+  "고궁":"⛩","놀이공원":"🎡","워터파크":"🌊","아쿠아리움":"🐠","전망대":"🗼","해수욕장":"🏖",
+  "박물관":"🏛","과학관":"🔬","공원":"🌳","동물원":"🦁","관광지":"📍","쇼핑":"🛍",
+  "시장":"🧺","문화재":"🏯","자연":"⛰"
+};
+
+var dl = document.getElementById('places');
+PLACES.forEach(function(p){
+  var o = document.createElement('option');
+  o.value = p[0];
+  dl.appendChild(o);
+});
+
+function findPlace(name){
+  name=(name||'').trim();
+  for(var i=0;i<PLACES.length;i++){ if(PLACES[i][0]===name) return PLACES[i]; }
+  return null;
+}
+
+var placeInput = document.getElementById('place');
+var hourSlider = document.getElementById('hour');
+var hourOut = document.getElementById('hourOut');
+var hourLabel = document.getElementById('hourLabel');
+var quickBtns = document.querySelectorAll('.quick button');
+var result = document.getElementById('result');
+var emptyMsg = document.getElementById('emptyMsg');
+
+var settingsBtn = document.getElementById('settingsBtn');
+var settingsPanel = document.getElementById('settingsPanel');
+var apiKeyInput = document.getElementById('apiKey');
+var useProxyInput = document.getElementById('useProxy');
+
+settingsBtn.addEventListener('click', function(){
+  settingsPanel.classList.toggle('show');
+});
+
+try {
+  var savedKey = localStorage.getItem('crowdtide_apikey');
+  var savedProxy = localStorage.getItem('crowdtide_useproxy');
+  if (savedKey) apiKeyInput.value = savedKey;
+  if (savedProxy === '1') useProxyInput.checked = true;
+} catch(e){}
+
+apiKeyInput.addEventListener('input', function(){
+  try { localStorage.setItem('crowdtide_apikey', apiKeyInput.value.trim()); } catch(e){}
+  render();
+});
+useProxyInput.addEventListener('change', function(){
+  try { localStorage.setItem('crowdtide_useproxy', useProxyInput.checked ? '1' : '0'); } catch(e){}
+  render();
+});
+
+var now = new Date();
+hourSlider.value = now.getHours();
+
+function fmtHour(h){
+  h = ((h%24)+24)%24;
+  var ampm = h<12 ? '오전' : '오후';
+  var h12 = h%12; if(h12===0) h12=12;
+  return ampm + ' ' + h12 + '시';
+}
+function isWeekend(){
+  var d = now.getDay();
+  return d===0 || d===6;
+}
+function crowdValue(category, hour){
+  var profile = CATEGORY_PROFILE[category] || CATEGORY_PROFILE["관광지"];
+  var h = ((hour%24)+24)%24;
+  var v = profile[h];
+  if (isWeekend()) v = v * 1.3;
+  return Math.min(100, Math.round(v));
+}
+function formatArea(sqm){
+  if (sqm >= 1000000) return (sqm/1000000).toFixed(1) + '㎢';
+  return sqm.toLocaleString() + '㎡';
+}
+function formatPeople(n){ return Math.round(n).toLocaleString() + '명'; }
+function formatDensity(people, sqm){
+  var per100 = (people / sqm) * 100;
+  if (per100 < 0.1) return '<0.1명/100㎡';
+  return per100.toFixed(1) + '명/100㎡';
+}
+
+var CONGEST_TO_PCT = { "여유": 15, "보통": 40, "약간 붐빔": 60, "붐빔": 78, "매우 붐빔": 92 };
+
+function fetchSeoulRealtime(areaName){
+  var key = apiKeyInput.value.trim();
+  if (!key || !areaName) return Promise.resolve(null);
+  var target = 'http://openapi.seoul.go.kr:8088/' + encodeURIComponent(key) +
+    '/json/citydata/1/5/' + encodeURIComponent(areaName);
+  var url = useProxyInput.checked
+    ? 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target)
+    : target;
+  var controller = new AbortController();
+  var timeout = setTimeout(function(){ controller.abort(); }, 6000);
+  return fetch(url, { signal: controller.signal })
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      clearTimeout(timeout);
+      var root = data.citydata || data.CITYDATA || data['SeoulRtd.citydata'] || null;
+      if (!root) return null;
+      var live = root.LIVE_PPLTN_STTS || root.live_ppltn_stts;
+      if (!live || !live[0]) return null;
+      var l = live[0];
+      var congestLabel = l.AREA_CONGEST_LVL;
+      var pctFromLabel = CONGEST_TO_PCT[congestLabel];
+      var min = parseFloat(l.AREA_PPLTN_MIN);
+      var max = parseFloat(l.AREA_PPLTN_MAX);
+      if (pctFromLabel === undefined && isNaN(min)) return null;
+
+      var parking = [];
+      var prkArr = root.PRK_STTS || root.prk_stts || [];
+      if (Array.isArray(prkArr)){
+        prkArr.forEach(function(pk){
+          var nm = pk.PRK_NM || pk.PRK_CD;
+          var cap = parseFloat(pk.CPCTY);
+          var cur = parseFloat(pk.CUR_PRK_CNT);
+          if (nm && !isNaN(cap) && cap > 0){
+            parking.push({ name: nm, avail: isNaN(cur) ? null : Math.max(0, cap - cur), cap: cap });
+          }
+        });
+      }
+
+      return {
+        pct: pctFromLabel !== undefined ? pctFromLabel : 50,
+        peopleMin: isNaN(min) ? null : min,
+        peopleMax: isNaN(max) ? null : max,
+        parking: parking
+      };
+    })
+    .catch(function(){ clearTimeout(timeout); return null; });
+}
+
+function levelInfo(pct){
+  if (pct <= 20) return {label:'한산함', color:'#5fae82', hint:'여유롭게 둘러보기 좋은 시간대예요'};
+  if (pct <= 40) return {label:'보통', color:'#5fae82', hint:'무난하게 다녀올 수 있는 정도예요'};
+  if (pct <= 65) return {label:'붐빔', color:'#3f9fb0', hint:'대기 시간이 있을 수 있어요'};
+  if (pct <= 85) return {label:'매우 붐빔', color:'#e2645a', hint:'혼잡이 예상돼요, 이른 시간대를 고려해보세요'};
+  return {label:'혼잡', color:'#e2645a', hint:'가급적 다른 시간대를 추천해요'};
+}
+
+function project(lat, lng){
+  return {
+    x: (lng - 124.5) / (131.0 - 124.5) * 260,
+    y: (38.6 - lat) / (38.6 - 33.0) * 400
+  };
+}
+
+var mapBox = document.getElementById('mapBox');
+var mapSvg = document.getElementById('mapSvg');
+var mapMarker = document.getElementById('mapMarker');
+var mapRing = document.getElementById('mapRing');
+var revealBox = document.getElementById('revealBox');
+var revealIcon = document.getElementById('revealIcon');
+
+function wholeKoreaTransform(boxW, boxH){
+  var scale = Math.min(boxW/260, boxH/400) * 0.94;
+  return { scale:scale, tx: boxW/2 - 130*scale, ty: boxH/2 - 200*scale };
+}
+
+var mapAnimSeq = 0;
+
+function animateMapTo(lat, lng, color, onDone){
+  var seq = ++mapAnimSeq;
+  mapRing.classList.remove('pulse');
+  mapMarker.style.transition = 'none';
+  mapRing.style.transition = 'none';
+  mapMarker.style.opacity = 0;
+  mapRing.style.opacity = 0;
+
+  var rect = mapBox.getBoundingClientRect();
+  var boxW = rect.width || 220, boxH = rect.height || 230;
+  var whole = wholeKoreaTransform(boxW, boxH);
+
+  mapSvg.style.transition = 'none';
+  mapSvg.style.transform = 'translate(' + whole.tx.toFixed(2) + 'px,' + whole.ty.toFixed(2) + 'px) scale(' + whole.scale.toFixed(3) + ')';
+
+  mapSvg.getBoundingClientRect();
+
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      if (seq !== mapAnimSeq) return;
+      var p = project(lat, lng);
+      var baseScale = Math.max(boxW/260, boxH/400);
+      var zoom = baseScale * 2.9;
+      var tx = boxW/2 - p.x*zoom, ty = boxH/2 - p.y*zoom;
+
+      mapMarker.setAttribute('cx', p.x);
+      mapMarker.setAttribute('cy', p.y);
+      mapMarker.setAttribute('fill', color);
+      mapRing.setAttribute('cx', p.x);
+      mapRing.setAttribute('cy', p.y);
+      mapRing.setAttribute('stroke', color);
+
+      mapSvg.style.transition = 'transform 13.6s cubic-bezier(.22,.05,.14,1)';
+      mapSvg.style.transform = 'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px) scale(' + zoom.toFixed(3) + ')';
+      mapMarker.style.transition = 'opacity .8s ease 12.4s';
+      mapRing.style.transition = 'opacity .8s ease 12.4s';
+      mapMarker.style.opacity = 1;
+      mapRing.style.opacity = 1;
+
+      var finished = false;
+      function finish(){
+        if (finished || seq !== mapAnimSeq) return;
+        finished = true;
+        mapSvg.removeEventListener('transitionend', onEnd);
+        mapRing.classList.add('pulse');
+        if (onDone) onDone();
+      }
+      function onEnd(e){ if (e.target === mapSvg && e.propertyName === 'transform') finish(); }
+      mapSvg.addEventListener('transitionend', onEnd);
+      setTimeout(finish, 14200);
+    });
+  });
+}
+
+function updateMarkerColorOnly(color){
+  mapMarker.setAttribute('fill', color);
+  mapRing.setAttribute('stroke', color);
+}
+
+var revealPhoto = document.getElementById('revealPhoto');
+
+function tryLoadPhoto(name, seqToken){
+  revealPhoto.style.opacity = 0;
+  revealPhoto.removeAttribute('src');
+  fetch('https://ko.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(name))
+    .then(function(r){ if (!r.ok) throw 0; return r.json(); })
+    .then(function(data){
+      if (seqToken !== mapAnimSeq) return;
+      var src = data && data.thumbnail && data.thumbnail.source;
+      if (!src) return;
+      revealPhoto.onload = function(){ if (seqToken === mapAnimSeq) revealPhoto.style.opacity = 1; };
+      revealPhoto.onerror = function(){ revealPhoto.style.opacity = 0; };
+      revealPhoto.src = src;
+    })
+    .catch(function(){});
+}
+
+var renderToken = 0;
+var lastPlaceKey = null;
+
+function applyResult(name, cat, area, capacity, pct, people, isLive, forecastHour, parking){
+  var info = levelInfo(pct);
+
+  document.getElementById('rName').textContent = name;
+  document.getElementById('rCatText').textContent = cat + ' · ' + (isWeekend() ? '주말 기준' : '평일 기준');
+  var badge = document.getElementById('rBadge');
+  badge.textContent = isLive ? '실시간' : '추정';
+  badge.className = 'badge reveal-badge ' + (isLive ? 'live' : 'est');
+  document.getElementById('rPct').textContent = pct + '%';
+  document.getElementById('rPct').style.color = info.color;
+  document.getElementById('rVerdict').textContent = info.label;
+  document.getElementById('rVerdict').style.color = info.color;
+  document.getElementById('rHint').textContent = info.hint;
+
+  document.getElementById('sArea').textContent = formatArea(area);
+  document.getElementById('sPeople').textContent = formatPeople(people);
+  document.getElementById('sDensity').textContent = formatDensity(people, area);
+
+  var bgPair = CATEGORY_BG[cat] || ["#151f2c","#2a4a5c"];
+  revealBox.style.background = 'linear-gradient(160deg,' + bgPair[1] + ' 0%,' + bgPair[0] + ' 100%)';
+  revealIcon.textContent = CATEGORY_ICON[cat] || '📍';
+  updateMarkerColorOnly(info.color);
+
+  var fbars = document.getElementById('fbars');
+  fbars.innerHTML = '';
+  for (var i=1;i<=6;i++){
+    var fh = forecastHour + i;
+    var fp = crowdValue(cat, fh);
+    var finfo = levelInfo(fp);
+    var col = document.createElement('div');
+    col.className = 'fbar';
+    var bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.height = Math.max(4, fp) + '%';
+    bar.style.background = finfo.color;
+    var lab = document.createElement('div');
+    lab.className = 'fh';
+    lab.textContent = ((fh%24)+24)%24 + '시';
+    col.appendChild(bar);
+    col.appendChild(lab);
+    fbars.appendChild(col);
+  }
+
+  var parkingSection = document.getElementById('parkingSection');
+  var parkingList = document.getElementById('parkingList');
+  if (isLive && parking && parking.length){
+    parkingSection.style.display = 'block';
+    parkingList.innerHTML = '';
+    parking.slice(0,4).forEach(function(pk){
+      var li = document.createElement('li');
+      li.style.cssText = 'display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);';
+      var left = document.createElement('span');
+      left.textContent = pk.name;
+      left.style.color = 'var(--sub)';
+      var right = document.createElement('span');
+      right.style.fontFamily = 'var(--mono)';
+      right.textContent = pk.avail !== null ? ('잔여 ' + pk.avail + ' / ' + pk.cap) : (pk.cap + '면');
+      li.appendChild(left); li.appendChild(right);
+      parkingList.appendChild(li);
+    });
+  } else if (isLive){
+    parkingSection.style.display = 'block';
+    parkingList.innerHTML = '<li style="color:var(--sub);font-size:12px;">이 장소는 주차장 정보가 제공되지 않아요</li>';
+  } else {
+    parkingSection.style.display = 'none';
+  }
+}
+
+function render(){
+  var myToken = ++renderToken;
+  var place = findPlace(placeInput.value);
+  var hour = parseInt(hourSlider.value, 10);
+  hourOut.textContent = fmtHour(hour);
+  hourLabel.textContent = '';
+
+  if (!place){
+    result.classList.remove('show');
+    emptyMsg.style.display = 'block';
+    lastPlaceKey = null;
+    return;
+  }
+  emptyMsg.style.display = 'none';
+  result.classList.add('show');
+
+  var name = place[0], cat = place[1], area = place[2], capacity = place[3],
+      areaName = place[4], lat = place[5], lng = place[6];
+  var isNow = (hour === now.getHours());
+  var estPct = crowdValue(cat, hour);
+
+  var placeChanged = (name !== lastPlaceKey);
+  lastPlaceKey = name;
+
+  applyResult(name, cat, area, capacity, estPct, capacity*(estPct/100), false, hour, null);
+
+  if (placeChanged){
+    revealBox.classList.remove('show');
+    var mySeq = mapAnimSeq + 1;
+    tryLoadPhoto(name, mySeq);
+    animateMapTo(lat, lng, levelInfo(estPct).color, function(){
+      revealBox.classList.add('show');
+    });
+  }
+
+  if (isNow && areaName){
+    fetchSeoulRealtime(areaName).then(function(live){
+      if (myToken !== renderToken) return;
+      if (!live) return;
+      var people = live.peopleMax !== null && live.peopleMin !== null
+        ? (live.peopleMin + live.peopleMax) / 2
+        : capacity * (live.pct/100);
+      applyResult(name, cat, area, capacity, live.pct, people, true, hour, live.parking);
+    });
+  }
+}
+
+var debounceTimer = null;
+placeInput.addEventListener('input', function(){
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(render, 380);
+});
+hourSlider.addEventListener('input', function(){
+  quickBtns.forEach(function(b){ b.classList.remove('active'); });
+  render();
+});
+quickBtns.forEach(function(btn){
+  btn.addEventListener('click', function(){
+    quickBtns.forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    var off = parseInt(btn.getAttribute('data-off'),10);
+    hourSlider.value = ((now.getHours()+off)%24+24)%24;
+    render();
+  });
+});
+
+render();
+</script>
+</body>
+</html>
